@@ -1,9 +1,9 @@
 import math
+import sys
 
 def getConditionalEntropy(Y,X,dataset):        # Y: Class Label, X: Feature
     total = len(dataset)
-    Y_value = sorted(set(i[Y] for i in dataset))    #all distinct values of class label in the set
-    X_value = sorted(set(i[X] for i in dataset))    #all distinct values of given feature in the set
+    X_value = sorted(set(i[X] for i in dataset))  # all distinct values of given feature in the set
     temp_x_y = {}
     temp_x = {}
     Hyx = 0.000000
@@ -106,32 +106,49 @@ def getClass(record,tree,feature):
             k = inter.keys()
             v = inter.values()
             return k[v.index(max(v))]
-
+def printConfusionMatrix(fp,fn,tp,tn):
+    print "******** Confusion Matrix for depth = ",depth,"********"
+    print " tn = ",tn," fn = ",fn
+    print " fn = ", tn, " tp = ", tp
+    return
 def test(testset,classLabel,tree):
-    tc = 0
-    fc = 0
+    fp = 0
+    fn = 0
+    tp = 0
+    tn = 0
     for i in testset:
         cl = getClass(i,tree,tree[0])
         if cl == i[classLabel]:
-            tc+=1
-            print "Correct for item = ",i[uniqueId]
+            if cl == Y_value[1]:
+                tp+=1
+            else:
+                tn+=1
+        elif cl == Y_value[1]:
+            fp+=1
         else:
-            fc+=1
-            print "Incorrect for item = ",i[uniqueId]
-
-    print "fc= ",fc, "tc= ",tc
+            fn+=1
+    printConfusionMatrix(tp,tn,fp,fn)
+    global Accuracy
+    Accuracy= (tp+tn)/(TestTotal+0.0)
     return
 
-classLabel = 0
-uniqueId = 7
-depth = 6
-dataset = {'root': getDataset('monks-1.train.csv')}
-testset = getDataset('monks-1.test.csv')
+if len(sys.argv) != 5:
+    print "Missing or Improper input !!"
+    print "DecisionTree.py <training set file> <testset file> <column# of classLabel> <column# of UniqueID>"
+    exit(0)
+classLabel = int(sys.argv[3])
+uniqueId = int(sys.argv[4])
+dataset = getDataset(sys.argv[1])
+testset = getDataset(sys.argv[2])
+TestTotal = len(testset)
+Accuracy = 0
 features = []
-for i in range(0,len(dataset['root'][0])):
+Y_value = sorted(set(i[classLabel] for i in dataset))  # all distinct values of class label in the set
+for i in range(0,len(dataset[0])):
     if i != classLabel and i != uniqueId:
         features.append(i)
-tree = getDecisionTree(dataset['root'],features,depth,classLabel)
-print tree
-
-test(testset,classLabel,tree)
+copy = list(features)
+for depth in range(1,17):
+    tree = getDecisionTree(dataset,features,depth,classLabel)
+    test(testset, classLabel, tree)
+    features = list(copy)
